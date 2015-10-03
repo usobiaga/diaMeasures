@@ -8,7 +8,7 @@ Applies certain ad-hoc measures used in Dialektometrics.
 
 The available classification methods are Med MinMwMax and MedMw.}
 \usage{
-diaClassification(measure, method, n, id)
+diaClassification(measure, method = c("Med", "MinMwMax", "MedMw"), n, ids)
 }
 \arguments{
 \item{measure}{Object coercible to data.frame containing the data.}
@@ -17,7 +17,7 @@ diaClassification(measure, method, n, id)
 
 \item{n}{Number of groups to be made.}
 
-\item{id}{vector of labels indicating which linguistical use as center. All will be used by default.}
+\item{ids}{vector of labels indicating which linguistical use as center. All will be used by default.}
 }
 \description{
 Classic Dialektometrical ad-hoc classification
@@ -29,6 +29,6 @@ The available classification methods are Med MinMwMax and MedMw.
 \examples{
 data(dsample)
 measure <- diaMeasure(dsample, location ~ question, 'answer', 'ird')
-diaClassification(measure, 'med')
+diaClass <- diaClassification(measure, 'Med', 6)
 }
 

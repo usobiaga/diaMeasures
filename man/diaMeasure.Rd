@@ -5,7 +5,7 @@
 \title{Computes a Dialectometrical measure}
 \usage{
 diaMeasure(data, formula, value.var, measure = c("ird", "ipi"),
-  binaryIndex = c("dice", "jaccard"), percentage = TRUE, subset)
+  binaryIndex = c("dice", "jaccard"), subset)
 }
 \arguments{
 \item{data}{object coercible to data.frame containing the data.}
@@ -16,6 +16,8 @@ diaMeasure(data, formula, value.var, measure = c("ird", "ipi"),
 
 \item{measure}{character of length 1 indiciating the selected.}
 
+\item{binaryIndex}{character of length 1 indicating the binary index to use in multiple answers}
+
 \item{subset}{index indicating which subset of data to take.}
 }
 \description{
@@ -23,7 +25,7 @@ Computes a Dialectometrical measure
 }
 \examples{
 data(dsample)
-measure <- diaMeasure(simpleSample, gender + location ~ question, 'answer', 'ird')
+measure <- diaMeasure(dsample, gender + location ~ question, 'answer', 'ird')
 print(measure)
 }
 

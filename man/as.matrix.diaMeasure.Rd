@@ -4,7 +4,12 @@
 \alias{as.matrix.diaMeasure}
 \title{Coertion to matrix}
 \usage{
-\method{as.matrix}{diaMeasure}(x)
+\method{as.matrix}{diaMeasure}(x, ...)
+}
+\arguments{
+\item{x}{object of class diaMeasure}
+
+\item{...}{unused}
 }
 \description{
 Coerce the diaMeasure object into a  matrix class. Uses the as.matrix method from the package dist.
