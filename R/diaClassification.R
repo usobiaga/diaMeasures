@@ -17,13 +17,12 @@
 #' 
 #' data(dsample)
 #' measure <- diaMeasure(dsample, location ~ question, 'answer', 'ird')
-#' diaClass <- diaClassification(measure, 'med')
+#' diaClass <- diaClassification(measure, 'Med', 6)
 #'
-diaClassification <- function(measure, method, n, ids)
-    UseMethod("diaClassification")
+diaClassification <- function(measure, method = c('Med', 'MinMwMax', 'MedMw'), n, ids)
+    UseMethod('diaClassification')
     
-    
-
+#' @export    
 diaClassification.diaMeasure <- function(measure, method = c('Med', 'MinMwMax', 'MedMw'), n, ids){
     method <- match.arg(method)
     if (method %in% c('MinMwMax', 'MedMw') & (n %% 2L != 0) )
@@ -91,15 +90,6 @@ diaClassification.diaMeasure <- function(measure, method = c('Med', 'MinMwMax', 
     return (result)
 }
 
-
-diaClassification.default <- function(measure, method){
-    msg <- paste(
-        'No diaClassification method available for object of class',
-        paste(class(measure), collapse = ' '))
-    stop (msg)
-}
-
-    
 
 
 

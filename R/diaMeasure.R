@@ -6,21 +6,23 @@
 #' @param formula formula indicating which variables represent ids and variables, see details.
 #' @param value.var character of length 1 indicating the variable containing.
 #' @param measure character of length 1 indiciating the selected.
+#' @param binaryIndex character of length 1 indicating the binary index to use in multiple answers
 #' @param subset index indicating which subset of data to take.
+#' 
 #' 
 #' @export
 #'
+#' @import data.table
 #' @useDynLib diaMeasures diaMeasure_C
 #' 
 #' @examples
 #' 
 #' data(dsample)
-#' measure <- diaMeasure(simpleSample, gender + location ~ question, 'answer', 'ird')
+#' measure <- diaMeasure(dsample, gender + location ~ question, 'answer', 'ird')
 #' print(measure)
 #'
 diaMeasure <- function(data, formula, value.var, measure = c('ird', 'ipi'),
-                       binaryIndex = c('dice', 'jaccard'), percentage = TRUE,
-                       subset){
+                       binaryIndex = c('dice', 'jaccard'), subset){
 
     mf <- match.call()
     m <- match(c('data', 'formula', 'value.var', 'subset'), names(mf), 0L)
@@ -31,13 +33,12 @@ diaMeasure <- function(data, formula, value.var, measure = c('ird', 'ipi'),
         mf$data <- substitute(data.table::as.data.table(data), list(data = mf$data))
     }
     mf <- as.list(eval(mf, parent.frame()))
-    print(as.data.table(do.call(rbind, mf)))
     availableMethods <- c('ird', 'ipi')
     idnbr <- length(all.vars(formula[[2]]))
     measure <- match(match.arg(measure), availableMethods)
     binaryIndex <- match(match.arg(binaryIndex), c('dice', 'jaccard'))
     attrs <- list(Size = length(mf[[1]]), Labels = do.call(paste, mf[1:idnbr]),
-                  class = 'diaMeasure', idVars = mf[1:idnbr], percentage = percentage)
+                  class = 'diaMeasure', idVars = mf[1:idnbr])
     mf <- mf[-(1:idnbr)]
     result <- .Call(diaMeasure_C, mf, measure, binaryIndex, attrs)
     
@@ -47,19 +48,30 @@ diaMeasure <- function(data, formula, value.var, measure = c('ird', 'ipi'),
 #' Coertion to matrix
 #'
 #' Coerce the diaMeasure object into a  matrix class. Uses the as.matrix method from the package dist.
+#'
+#' @param x object of class diaMeasure
+#' @param ... unused
 #' 
-as.matrix.diaMeasure <- function(x){
+#' @export
+as.matrix.diaMeasure <- function(x, ...){
     class(x) <- 'dist'
     y <- as.matrix(x)
-    diag(y) <- attr(x, "diagv")
+    diag(y) <- attr(x, 'diagv')
     return (y)
 }
 
 #' Prints diaMeasure
 #'
-#' Print lower or upper part of the coerced matrix. 
-#' 
-print.diaMeasure <- function(x, lower = TRUE, justify = 'none', digits = getOption('digits')){
+#' Print lower or upper part of the coerced matrix.
+#'
+#' @param x object of clas diaMeasure.
+#' @param lower logical of length one indicating if only the lower part should be passed.
+#' @param justify argument that is passed to format.
+#' @param digits digits to be shown.
+#' @param ... unused
+#'
+#' @export
+print.diaMeasure <- function(x, lower = TRUE, justify = 'none', digits = getOption('digits'), ...){
     y <- as.matrix(x)
     z <- format(y, justify = 'none', digits = digits)
     if (lower){
