@@ -21,9 +21,9 @@
 #' measure <- diaMeasure(dsample, gender + location ~ question, 'answer', 'ird')
 #' print(measure)
 #'
-diaMeasure <- function(data, formula, value.var, measure = c('ird', 'ipi'),
+diaMeasure <- function(data, formula, value.var, measure = c('ird', 'ipi', 'levenshtein'),
                        binaryIndex = c('dice', 'jaccard'), subset){
-
+    
     mf <- match.call()
     m <- match(c('data', 'formula', 'value.var', 'subset'), names(mf), 0L)
     mf <- mf[c(1L, m)]
@@ -33,13 +33,18 @@ diaMeasure <- function(data, formula, value.var, measure = c('ird', 'ipi'),
         mf$data <- substitute(data.table::as.data.table(data), list(data = mf$data))
     }
     mf <- as.list(eval(mf, parent.frame()))
-    availableMethods <- c('ird', 'ipi')
+    availableMethods <- c('ird', 'ipi', 'levenshtein')
     idnbr <- length(all.vars(formula[[2]]))
     measure <- match(match.arg(measure), availableMethods)
-    binaryIndex <- match(match.arg(binaryIndex), c('dice', 'jaccard'))
+    if (measure != 'levenshtein'){
+        binaryIndex <- match(match.arg(binaryIndex), c('dice', 'jaccard'))
+    } else {
+        binaryIndex <- 'empty'
+    }
     attrs <- list(Size = length(mf[[1]]), Labels = do.call(paste, mf[1:idnbr]),
                   class = 'diaMeasure', idVars = mf[1:idnbr])
     mf <- mf[-(1:idnbr)]
+    print(mf)
     result <- .Call(diaMeasure_C, mf, measure, binaryIndex, attrs)
     
     return (result)

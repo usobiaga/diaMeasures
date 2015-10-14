@@ -4,7 +4,7 @@
 \alias{diaMeasure}
 \title{Computes a Dialectometrical measure}
 \usage{
-diaMeasure(data, formula, value.var, measure = c("ird", "ipi"),
+diaMeasure(data, formula, value.var, measure = c("ird", "ipi", "levenshtein"),
   binaryIndex = c("dice", "jaccard"), subset)
 }
 \arguments{
