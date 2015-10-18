@@ -32,6 +32,7 @@ diaMeasure <- function(data, formula, value.var, measure = c('ird', 'ipi', 'leve
     if (!data.table::is.data.table(data)){
         mf$data <- substitute(data.table::as.data.table(data), list(data = mf$data))
     }
+    print(eval(mf, parent.frame()))
     mf <- as.list(eval(mf, parent.frame()))
     availableMethods <- c('ird', 'ipi', 'levenshtein')
     idnbr <- length(all.vars(formula[[2]]))
@@ -44,7 +45,7 @@ diaMeasure <- function(data, formula, value.var, measure = c('ird', 'ipi', 'leve
     attrs <- list(Size = length(mf[[1]]), Labels = do.call(paste, mf[1:idnbr]),
                   class = 'diaMeasure', idVars = mf[1:idnbr])
     mf <- mf[-(1:idnbr)]
-    print(mf)
+    
     result <- .Call(diaMeasure_C, mf, measure, binaryIndex, attrs)
     
     return (result)
@@ -59,9 +60,11 @@ diaMeasure <- function(data, formula, value.var, measure = c('ird', 'ipi', 'leve
 #' 
 #' @export
 as.matrix.diaMeasure <- function(x, ...){
-    class(x) <- 'dist'
-    y <- as.matrix(x)
-    diag(y) <- attr(x, 'diagv')
+    d <- sqrt(length(x) * 2 +  length(attr(x, 'Labels')))
+    y <- matrix(attr(x, 'diagv'), d, d)
+    y[upper.tri(y)] <- x
+    y[lower.tri(y)] <- t(y)[lower.tri(y)]
+    colnames(y) <- rownames(y) <- attr(x, 'Labels')
     return (y)
 }
 

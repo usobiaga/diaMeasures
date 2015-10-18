@@ -171,52 +171,49 @@ double do_binary_levenshtein(SEXP elem1, SEXP elem2, SEXP distMat, SEXP strs){
 void do_ird_variable(double *answer, int *obs, SEXP strList, int binary_measure){
   SEXP first, second;
   R_len_t len;
-  double binAns;
   int i, j, ij;
   
   len = length(strList);
   ij = 0;
   for (i = 0; i < len; i++){
     for (j = 0; j < i; j++){
-
       first = VECTOR_ELT(strList, i);
       second = VECTOR_ELT(strList, j);
-      
-      if (length(first) == 0 || length(second) == 0) continue;
-      obs[ij]++;
+      if (length(first) == 0 || length(second) == 0){
+	ij++;
+	continue;
+      }
+      obs[ij] += 1;
       
       if (length(first) == 1 && length(second) == 1){  /* simple case */
 	if (STRCMPR(first, 0, second, 0) == 0){
-	  answer[ij] = answer[ij] + 1.0;
-	  ij++;
-	  continue;
+	  answer[ij] += 1.0;
 	}
 	ij++;
 	continue;
       }
       
-      answer[ij] = answer[ij] + do_binary(first, second, binary_measure); /* binary measure */
+      answer[ij] += do_binary(first, second, binary_measure); /* binary measure */
       ij++;
     }
   }
 }
 
 void do_ipi_variable(double *answer, int *obs, SEXP strList, int binary_measure){
-  SEXP count, uniqueLemmas, valueMatrix, coidentityMatrix, first, second;
-  int i, j, ij, index, index2, aux;
+  SEXP count, uniqueLemmas, valueVector, coidentityVector, first, second;
+  int i, j, ij, nobs, index;
   R_len_t nlem, nlemu;
-  double *valueMatrix_ptrs, *coidentityMatrix_ptrs, val, totalCount, *count_ptrs;
+  double *valueVector_ptrs, *coidentityVector_ptrs, val, bval, totalCount, *count_ptrs, firstVal, secondVal, aux;
 
   /* count lemmas unique lemmas */
-
-  Rprintf("calling unique list \n");
+  
   PROTECT(uniqueLemmas = call_unique(strList)); /* 1 */
-  Rprintf("out of calling unique list \n");
   PROTECT(count = allocVector(REALSXP, length(uniqueLemmas))); /* 2 */
   memset(REAL(count), 0.0, length(uniqueLemmas) * sizeof(double));
   count_ptrs = REAL(count);
   totalCount = 0.0;
   nlem = length(strList);
+  nlemu = length(uniqueLemmas);
   for (i = 0; i < nlem; i++){
     if (length(VECTOR_ELT(strList, i)) == 0) continue;
     index = matchFirstStr(VECTOR_ELT(strList, i), uniqueLemmas);
@@ -225,42 +222,35 @@ void do_ipi_variable(double *answer, int *obs, SEXP strList, int binary_measure)
   }
   
   /* compute the TAX values */
+  PROTECT(valueVector = allocVector(REALSXP, nlemu));  /* 3 */
+  PROTECT(coidentityVector = allocVector(REALSXP, nlemu)); /* 4 */
   
-  nlemu = length(uniqueLemmas);
-  PROTECT(valueMatrix = allocMatrix(REALSXP, nlemu, nlemu));  /* 3 */
-  PROTECT(coidentityMatrix = allocMatrix(REALSXP, nlemu, nlemu)); /* 4 */
-  valueMatrix_ptrs = REAL(valueMatrix);
-  coidentityMatrix_ptrs = REAL(coidentityMatrix);
+  memset(REAL(valueVector), 0.0, nlemu * sizeof(double));
+  memset(REAL(coidentityVector), 0.0, nlemu* sizeof(double));
+  
+  valueVector_ptrs = REAL(valueVector);
+  coidentityVector_ptrs = REAL(coidentityVector);
   
   for (i = 0; i < nlemu; i++){
-    /* fill the diagonal */
-    valueMatrix_ptrs[i + i*nlemu] = count_ptrs[i] / totalCount; 
-    coidentityMatrix_ptrs[i + i*nlemu] = 0.0;
+    first = VECTOR_ELT(uniqueLemmas, i);
     
-    for (j = 0; j < i; j++){
-
-      first = VECTOR_ELT(uniqueLemmas, i);
+    for (j = 0; j < nlemu; j++){
       second = VECTOR_ELT(uniqueLemmas, j);
       
-      if (length(first) == 1 && length(second) == 1){ /* simple case */
-	valueMatrix_ptrs[j + i*nlemu] = valueMatrix_ptrs[i + j*nlemu] = 0.0;
-	coidentityMatrix_ptrs[j + i*nlemu] = coidentityMatrix_ptrs[i + j*nlemu] = 1.0;
+      bval = do_binary(first, second, binary_measure);
+      if (bval == 0.0){
+	coidentityVector_ptrs[i]++;
 	continue;
       }
       
-      val = do_binary(first, second, binary_measure);
-      if (val == 0.0){ /* no matching binary */
-	valueMatrix_ptrs[j + i*nlemu] = valueMatrix_ptrs[i + j*nlemu] = 0.0;
-	coidentityMatrix_ptrs[j + i*nlemu] = coidentityMatrix_ptrs[i + j*nlemu] = 1.0;
-	continue;
-      }
+      valueVector_ptrs[i] += (bval * count_ptrs[j]);
       
-      valueMatrix_ptrs[j + i*nlemu] = valueMatrix_ptrs[i + j*nlemu] =
-	val * (count_ptrs[i] + count_ptrs[j]) / (2.0 * totalCount);
-
-      coidentityMatrix_ptrs[j + i*nlemu] = coidentityMatrix_ptrs[i + j*nlemu] =
-	1.0 - valueMatrix_ptrs[j + i*nlemu];
     }
+    valueVector_ptrs[i] = valueVector_ptrs[i] / totalCount;
+  }
+
+  for (i = 0; i < nlemu; i++){
+    Rprintf("row %d  bval %f \n ", i, valueVector_ptrs[i]);
   }
 
   /* apply identity values */
@@ -268,6 +258,7 @@ void do_ipi_variable(double *answer, int *obs, SEXP strList, int binary_measure)
   ij = 0;
   for (i = 0; i < nlem; i++){
     for (j = 0; j < i; j++){
+      
       first = VECTOR_ELT(strList, i);
       second = VECTOR_ELT(strList, j);
       
@@ -275,11 +266,16 @@ void do_ipi_variable(double *answer, int *obs, SEXP strList, int binary_measure)
 	ij++;
 	continue;
       }
+      
       obs[ij]++;
-      index = matchFirstStr(first, uniqueLemmas);
-      index2 = matchFirstStr(second, uniqueLemmas);
-      val = 1.0 - (valueMatrix_ptrs[index + index2*nlemu] - 1.0) / totalCount;
-      answer[ij] = answer[ij] + val / (val + coidentityMatrix_ptrs[index + index2*nlemu]);
+      bval = do_binary(first, second, binary_measure);
+      firstVal = valueVector_ptrs[matchFirstStr(first, uniqueLemmas)];
+      secondVal = valueVector_ptrs[matchFirstStr(second, uniqueLemmas)];
+      Rprintf("index1 is %f index2 is %f \n", firstVal, secondVal);
+      aux =  bval * (firstVal + secondVal) / 2.0;
+      val = 1.0 - (aux - 1.0) / totalCount;
+      Rprintf("final val is %f and aux %f \n", (val / (val + (1.0 - aux))), aux);
+      answer[ij] += (val / (val + (1.0 - aux)));
       ij++;
     }
   }
@@ -333,7 +329,7 @@ void do_levenshtein_variable(double *answer, int *obs, SEXP strList, int binary_
 	ij++;
 	continue;
       }
-      obs[ij]++;
+      obs[ij] = obs[ij] + 1;
       index = matchFirstStr(first, ustrList);
       index2 = matchFirstStr(second, ustrList);
       Rprintf("the adding value is %f \n", REAL(binaryValues)[index + index2 * nustrl]);
@@ -422,7 +418,6 @@ SEXP do_levenshtein(SEXP inputList, int binary_measure){
   
   UNPROTECT(2);
   return answer;
-  
 }
 
 SEXP diaMeasure_C(SEXP inputList, SEXP measureR, SEXP binary_measureR, SEXP attrs){
