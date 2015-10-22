@@ -71,5 +71,18 @@ test_that('Levenshtein Distance', {
 
               res <- c(41.666, 77.777, 66.666, 70, 83.333, 61.111, 66.666, 66.666, 100, 20)
               expect_that(all(m - res < 0.01), eqauls(TRUE))
+          })
 
+test_that('IRD correctness', {
+              m <- diaMeasure(set, location ~ question, 'answer', 'iri', 'dice')
+              m <- as.matrix(m)
+              expect_that(round(m[1, 2], 2), equals(100 - 58.33)) # Itziar Maule (simple example)
+              expect_that(round(m[4, 5], 2), equals(100 - 80))# Urketa Uztartze (NA observations)
+              expect_that(round(m[4, 3], 2), equals(100 - 38.89)) # Sempere Urketa (more sample)
+          })
+
+test_that('IPD correctness', {
+              m <- diaMeasure(set, location ~ question, 'answer', 'ipd', 'dice')
+              m <- as.matrix(m)
+              expect_that(round(m[1, 2], 2), equals(100 - 67.41))
           })

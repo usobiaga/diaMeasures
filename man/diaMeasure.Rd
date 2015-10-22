@@ -4,8 +4,8 @@
 \alias{diaMeasure}
 \title{Computes a Dialectometrical measure}
 \usage{
-diaMeasure(data, formula, value.var, measure = c("ird", "ipi", "levenshtein"),
-  binaryIndex = c("dice", "jaccard"), subset)
+diaMeasure(data, formula, value.var, measure = c("ird", "ipi", "levenshtein",
+  "iri", "ipd"), binaryIndex = c("dice", "jaccard"), subset)
 }
 \arguments{
 \item{data}{object coercible to data.frame containing the data.}

@@ -21,7 +21,7 @@
 #' measure <- diaMeasure(dsample, gender + location ~ question, 'answer', 'ird')
 #' print(measure)
 #'
-diaMeasure <- function(data, formula, value.var, measure = c('ird', 'ipi', 'levenshtein'),
+diaMeasure <- function(data, formula, value.var, measure = c('ird', 'ipi', 'levenshtein', 'iri', 'ipd'),
                        binaryIndex = c('dice', 'jaccard'), subset){
     
     mf <- match.call()
@@ -34,7 +34,7 @@ diaMeasure <- function(data, formula, value.var, measure = c('ird', 'ipi', 'leve
     }
     print(eval(mf, parent.frame()))
     mf <- as.list(eval(mf, parent.frame()))
-    availableMethods <- c('ird', 'ipi', 'levenshtein')
+    availableMethods <- c('ird', 'ipi', 'levenshtein', 'iri', 'ipd')
     idnbr <- length(all.vars(formula[[2]]))
     measure <- match(match.arg(measure), availableMethods)
     if (measure != 'levenshtein'){
@@ -47,7 +47,6 @@ diaMeasure <- function(data, formula, value.var, measure = c('ird', 'ipi', 'leve
     mf <- mf[-(1:idnbr)]
     
     result <- .Call(diaMeasure_C, mf, measure, binaryIndex, attrs)
-    
     return (result)
 }
 

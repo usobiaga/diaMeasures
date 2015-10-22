@@ -6,7 +6,7 @@
 #define MAX2(nbr1, nbr2) (nbr1 < nbr2 ? nbr2 : nbr1)
 #define SWAPSEXP(x, y, t) do { t=x; x=y; y=t; } while (0)
 
-enum {IRD = 1, IPI, LEVENSHTEIN};
+enum {IRD = 1, IPI, LEVENSHTEIN, IRI, IPD};
 enum {DICE = 1, JACCARD};
 
 /* match first vector str*/
@@ -455,6 +455,16 @@ SEXP do_levenshtein(SEXP inputList, int binary_measure){
   return answer;
 }
 
+void reverseMeasure (SEXP measure){
+  R_len_t len;
+  int i;
+  
+  len = length(measure);
+  for (i = 0; i < len; ++i){
+      REAL(measure)[i] =  100.0 - REAL(measure)[i];
+  }
+}
+
 SEXP diaMeasure_C(SEXP inputList, SEXP measureR, SEXP binary_measureR, SEXP attrs){
   int measure, binary_measure, i;
   SEXP answer, diagVal, names;
@@ -478,6 +488,19 @@ SEXP diaMeasure_C(SEXP inputList, SEXP measureR, SEXP binary_measureR, SEXP attr
   case LEVENSHTEIN:
     PROTECT(answer = do_levenshtein(inputList, binary_measure)); /* 2 */
     INTEGER(diagVal)[0] = 0;
+    break;
+
+  case IRI:
+    PROTECT(answer = do_ird(inputList, binary_measure)); /* 2 */
+    reverseMeasure(answer);
+    INTEGER(diagVal)[0] = 0;
+    break;
+
+  case IPD:
+    PROTECT(answer = do_ipi(inputList, binary_measure)); /* 2 */
+    reverseMeasure(answer);
+    INTEGER(diagVal)[0] = 0;
+    break;
   }
 
   PROTECT(names = getAttrib(attrs, R_NamesSymbol)); /* 3 */
