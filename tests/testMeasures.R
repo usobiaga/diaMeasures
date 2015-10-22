@@ -35,8 +35,6 @@ set <- structure(list(gender = structure(c(1L, 2L, 2L, 1L, 2L, 1L, 1L,
                  .Names = c("gender", "location", "question", "answer"),
                  row.names = c(NA, -26L), class = "data.frame")
 
-
-
 ipiSimilarityMatrix <- matrix(
     c(0.683, 0.433, 0.5, 0.555, 
       0.666, 0.433, 0.5, 0.555,
@@ -57,11 +55,21 @@ test_that('IRD correctness', {
           })
 
 test_that('IPD correctness', {
-              set2 <- set[set$question %in% c("q1", "q1"), ]
-              m2 <- diaMeasure(set2, location ~ question, 'answer', 'ipi', 'dice')
-              m2 <- as.matrix(m2)
-              expect_that(round(m[1, 2], 2), equals(67.41))
-              
               m <- diaMeasure(set, location ~ question, 'answer', 'ipi', 'dice')
               m <- as.matrix(m)
+              expect_that(round(m[1, 2], 2), equals(67.41))
+          })
+
+test_that('Levenshtein Distance', {
+              phoneticSet <- set
+              phoneticSet$answer <- letters[as.numeric(factor(set$answer))]
+              
+              phoneticSet <- phoneticSet[phoneticSet$location %in% c('Itziar', 'Maule'), ]
+              
+              m <- diaMeasure(phoneticSet, location ~ question, 'answer', 'levenshtein')
+              m <- as.matrix(m)
+
+              res <- c(41.666, 77.777, 66.666, 70, 83.333, 61.111, 66.666, 66.666, 100, 20)
+              expect_that(all(m - res < 0.01), eqauls(TRUE))
+
           })

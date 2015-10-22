@@ -84,6 +84,16 @@ SEXP call_adist(SEXP x){
   return (eval(s, R_GlobalEnv));
 }
 
+SEXP call_sort(SEXP x){
+  SEXP s, t;
+  t = s = PROTECT(allocList(2));
+  SET_TYPEOF(s, LANGSXP);
+  SETCAR(t, install("sort")); t = CDR(t);
+  SETCAR(t, x);
+  UNPROTECT(1);
+  return (eval(s, R_GlobalEnv));
+}
+
 double do_binary(SEXP elem1, SEXP elem2, int byn){
   R_len_t  nelem1, nelem2;
   double vals[3] = {0.0, 0.0, 0.0};  /* vals = [a,b,c] */
@@ -119,11 +129,11 @@ double do_binary(SEXP elem1, SEXP elem2, int byn){
 }
 
 double do_binary_levenshtein(SEXP elem1, SEXP elem2, SEXP distMat, SEXP strs){
-  SEXP t;
+  SEXP t, i_vec, j_vec;
   R_len_t  nelem1, nelem2, multiplier, nstrs;
-  double  val, val2, distance;
+  double  val, candidateVal, finalVal, distance;
   int i, j, pos1, pos2, totalVal, counter;
-  const char *s1, *s2, *s3, *s4;
+  const char *s1, *s2;
 
   /* elem1 must be the long one */
   if (length(elem2) > length(elem1)){
@@ -134,35 +144,54 @@ double do_binary_levenshtein(SEXP elem1, SEXP elem2, SEXP distMat, SEXP strs){
   multiplier = length(elem2);
   distance = 0.0;
 
+  Rprintf("distMat Size is %d \n", length(distMat));
+  Rprintf("length elem1 is %d  and elem2 is  %d \n", length(elem1), length(elem2));
+
+  PROTECT(i_vec = allocVector(REALSXP, length(elem1)));
+  
   /* Rprintf(" printing binary levenshtein \n");  */
-  for (i = 0; i < length(elem1); i++){
-    for (j = 0; j < length(elem2); j++){
+  for (i = 0; i < length(elem1); ++i){
+    for (j = 0; j < length(elem2); ++j){
       if (STRCMPR(elem1, i, elem2, j) == 0){
 	s1 = CHAR(STRING_ELT(elem1, i));
 	s2 = CHAR(STRING_ELT(elem2, j));
 	val = 0.0;
 	break;
       }
+      
       pos1 = matchFirstChar(CHAR(STRING_ELT(elem1, i)), strs);
       pos2 = matchFirstChar(CHAR(STRING_ELT(elem2, j)), strs);
-      if (i == 0){
-	val = REAL(distMat)[nstrs * pos1 + pos2];
+      Rprintf("ith is %d jth is %d,  pos1 is %d and pos2 is %d \n", i, j, pos1, pos2);
+
+      candidateVal =  REAL(distMat)[nstrs * pos1 + pos2];
+      if (j == 0){
+	val = candidateVal;
 	s1 = CHAR(STRING_ELT(elem1, i));
 	s2 = CHAR(STRING_ELT(elem2, j));
-      } else {
-	val2 =  REAL(distMat)[nstrs * pos1 + pos2];
-	if (val2 < val){
-	  val = val2;
-	  s1 = CHAR(STRING_ELT(elem1, i));
-	  s2 = CHAR(STRING_ELT(elem2, j));
-	}
+	continue;
+      }
+	
+      if (candidateVal < val){
+	val = candidateVal;
+	s1 = CHAR(STRING_ELT(elem1, i));
+	s2 = CHAR(STRING_ELT(elem2, j));
       }
     }
-    distance = distance + 2.0 * val / (double) MAX2(strlen(s1), strlen(s2));
+    
+    Rprintf("s1 is %s s2 is %s and val is %f \n", s1, s2, val);
+    REAL(i_vec)[i] = val / (double) MAX2(strlen(s1), strlen(s2));
+    distance += REAL(i_vec)[i];
   }
-
-  distance = distance / (double)(length(elem1) + length(elem2));
+  Rprintf("ending \n");
+  
+  j_vec = call_sort(i_vec);
+  for (j = 0; j < length(elem2); j++){
+    distance += REAL(j_vec)[j];
+  }
+  
+  distance = distance / (double) (length(elem1) + length(elem2));
   Rprintf("distance is %f \n", distance);
+  UNPROTECT(1);
   return distance;
 }
 
@@ -291,9 +320,9 @@ void do_levenshtein_variable(double *answer, int *obs, SEXP strList, int binary_
 
   PROTECT(uniqueStr = call_unique(call_unlist(strList)));  /* 1 */
   PROTECT(strs = call_unlist(strList)); /* 2 */
-  PROTECT(strDists = call_adist(strs));  /* 3 */
+  PROTECT(strDists = call_adist(uniqueStr));  /* 3 */
   PROTECT(ustrList = call_unique(strList)); /* 4 */
-
+  
   nustrl = length(ustrList);
   PROTECT(binaryValues = allocMatrix(REALSXP, nustrl, nustrl)); /* 5 */
   PROTECT(maxValues = allocMatrix(REALSXP, nustrl, nustrl)); /* 6 */
@@ -305,18 +334,24 @@ void do_levenshtein_variable(double *answer, int *obs, SEXP strList, int binary_
     for (j = 0; j < i; j++){
       second = VECTOR_ELT(ustrList, j);
       if (length(first) == 0 || length(second) == 0){
-	Rprintf("length 0 stuff \n");
+	/* Rprintf("length 0 stuff \n"); */
 	continue;
       }
-      Rprintf("length not zero stuff \n");
+      /* Rprintf("length not zero stuff \n"); */
       binaryValues_ptrs[j + i*nustrl] = binaryValues_ptrs[i + j*nustrl] =
-	do_binary_levenshtein(first, second, strDists, strs);
+	do_binary_levenshtein(first, second, strDists, uniqueStr);
       /* Rprintf(" binary Values first value is %f \n", REAL(binaryValues)[ij]); */
       /* ij++; */
     }
   }
 
-  Rprintf("not here I guess \n");
+  for (i = 0; i < nustrl; i++){
+    for (j = 0; j < i; j++){
+      Rprintf("Value is % f \n", binaryValues_ptrs[j + i*nustrl]);
+    }
+  }
+      
+  Rprintf("finished \n");
 
   /* TODO the binaryValues are calculated next calculate the results */
   nlemmas = length(strList);
@@ -332,7 +367,7 @@ void do_levenshtein_variable(double *answer, int *obs, SEXP strList, int binary_
       obs[ij] = obs[ij] + 1;
       index = matchFirstStr(first, ustrList);
       index2 = matchFirstStr(second, ustrList);
-      Rprintf("the adding value is %f \n", REAL(binaryValues)[index + index2 * nustrl]);
+      /* Rprintf("the adding value is %f \n", REAL(binaryValues)[index + index2 * nustrl]); */
       answer[ij] = answer[ij] + REAL(binaryValues)[index + index2 * nustrl];
       ij++;
     }
