@@ -2,14 +2,16 @@
 #include <Rinternals.h>
 
 #define STRCMPR(str1, i, str2, j) (strcmp(CHAR(STRING_ELT(str1, i)), CHAR(STRING_ELT(str2, j))))
-#define MIN2(nbr1, nbr2) (nbr1 > nbr2 ? nbr2 : nbr1)
 #define MAX2(nbr1, nbr2) (nbr1 < nbr2 ? nbr2 : nbr1)
-#define SWAPSEXP(x, y, t) do { t=x; x=y; y=t; } while (0)
+/* #define SWAPSEXP(x, y, t) do { t=x; x=y; y=t; } while (0) */
+#define SWAPSEXP(x, y, t) {t=x; x=y; y=t;};
 
 enum {IRD = 1, IPI, LEVENSHTEIN, IRI, IPD};
 enum {DICE = 1, JACCARD};
 
-/* match first vector str*/
+/* auxiliar functions */
+
+/* match first char vector in list chars*/
 int matchFirstStr(SEXP str, SEXP vecStr){
   SEXP vecElem;
   R_len_t strl, vecStrl;
@@ -32,6 +34,7 @@ int matchFirstStr(SEXP str, SEXP vecStr){
   error ("matchFirstStr has not found any result");
 }
 
+/* match char in char vector */
 int matchFirstChar(const char *s, SEXP str){
   R_len_t len;
   int i;
@@ -42,56 +45,16 @@ int matchFirstChar(const char *s, SEXP str){
   error ("matchFirstChar has not found any results");
 }
 
-
 /* optimize these functions */
-SEXP call_unique(SEXP x){
+
+SEXP single_arg_R_fun(char* fun, SEXP x){
   SEXP s, t;
   t = s = PROTECT(allocList(2));
   SET_TYPEOF(s, LANGSXP);
-  SETCAR(t, install("unique")); t = CDR(t);
+  SETCAR(t, install(fun)); t = CDR(t);
   SETCAR(t,  x);
   UNPROTECT(1);
   return eval(s, R_GlobalEnv);
-}
-
-SEXP call_nchar(SEXP x){
-  SEXP s, t;
-  t = s = PROTECT(allocList(2));
-  SET_TYPEOF(s, LANGSXP);
-  SETCAR(t, install("nchar")); t = CDR(t);
-  SETCAR(t,  x);
-  UNPROTECT(1);
-  return eval(s, R_GlobalEnv);
-}
-
-SEXP call_unlist(SEXP x){
-  SEXP s, t;
-  t = s = PROTECT(allocList(2));
-  SET_TYPEOF(s, LANGSXP);
-  SETCAR(t, install("unlist")); t = CDR(t);
-  SETCAR(t, x);
-  UNPROTECT(1);
-  return (eval(s, R_GlobalEnv));
-}
-
-SEXP call_adist(SEXP x){
-  SEXP s, t;
-  t = s = PROTECT(allocList(2));
-  SET_TYPEOF(s, LANGSXP);
-  SETCAR(t, install("adist")); t = CDR(t);
-  SETCAR(t, x);
-  UNPROTECT(1);
-  return (eval(s, R_GlobalEnv));
-}
-
-SEXP call_sort(SEXP x){
-  SEXP s, t;
-  t = s = PROTECT(allocList(2));
-  SET_TYPEOF(s, LANGSXP);
-  SETCAR(t, install("sort")); t = CDR(t);
-  SETCAR(t, x);
-  UNPROTECT(1);
-  return (eval(s, R_GlobalEnv));
 }
 
 double do_binary(SEXP elem1, SEXP elem2, int byn){
@@ -144,12 +107,7 @@ double do_binary_levenshtein(SEXP elem1, SEXP elem2, SEXP distMat, SEXP strs){
   multiplier = length(elem2);
   distance = 0.0;
 
-  Rprintf("distMat Size is %d \n", length(distMat));
-  Rprintf("length elem1 is %d  and elem2 is  %d \n", length(elem1), length(elem2));
-
   PROTECT(i_vec = allocVector(REALSXP, length(elem1)));
-  
-  /* Rprintf(" printing binary levenshtein \n");  */
   for (i = 0; i < length(elem1); ++i){
     for (j = 0; j < length(elem2); ++j){
       if (STRCMPR(elem1, i, elem2, j) == 0){
@@ -161,7 +119,6 @@ double do_binary_levenshtein(SEXP elem1, SEXP elem2, SEXP distMat, SEXP strs){
       
       pos1 = matchFirstChar(CHAR(STRING_ELT(elem1, i)), strs);
       pos2 = matchFirstChar(CHAR(STRING_ELT(elem2, j)), strs);
-      Rprintf("ith is %d jth is %d,  pos1 is %d and pos2 is %d \n", i, j, pos1, pos2);
 
       candidateVal =  REAL(distMat)[nstrs * pos1 + pos2];
       if (j == 0){
@@ -178,19 +135,17 @@ double do_binary_levenshtein(SEXP elem1, SEXP elem2, SEXP distMat, SEXP strs){
       }
     }
     
-    Rprintf("s1 is %s s2 is %s and val is %f \n", s1, s2, val);
     REAL(i_vec)[i] = val / (double) MAX2(strlen(s1), strlen(s2));
     distance += REAL(i_vec)[i];
   }
-  Rprintf("ending \n");
+
   
-  j_vec = call_sort(i_vec);
+  j_vec = single_arg_R_fun("sort", i_vec);
   for (j = 0; j < length(elem2); j++){
     distance += REAL(j_vec)[j];
   }
   
   distance = distance / (double) (length(elem1) + length(elem2));
-  Rprintf("distance is %f \n", distance);
   UNPROTECT(1);
   return distance;
 }
@@ -236,7 +191,7 @@ void do_ipi_variable(double *answer, int *obs, SEXP strList, int binary_measure)
 
   /* count lemmas unique lemmas */
   
-  PROTECT(uniqueLemmas = call_unique(strList)); /* 1 */
+  PROTECT(uniqueLemmas = single_arg_R_fun("unique", strList)); /* 1 */
   PROTECT(count = allocVector(REALSXP, length(uniqueLemmas))); /* 2 */
   memset(REAL(count), 0.0, length(uniqueLemmas) * sizeof(double));
   count_ptrs = REAL(count);
@@ -278,10 +233,6 @@ void do_ipi_variable(double *answer, int *obs, SEXP strList, int binary_measure)
     valueVector_ptrs[i] = valueVector_ptrs[i] / totalCount;
   }
 
-  for (i = 0; i < nlemu; i++){
-    Rprintf("row %d  bval %f \n ", i, valueVector_ptrs[i]);
-  }
-
   /* apply identity values */
   
   ij = 0;
@@ -300,10 +251,8 @@ void do_ipi_variable(double *answer, int *obs, SEXP strList, int binary_measure)
       bval = do_binary(first, second, binary_measure);
       firstVal = valueVector_ptrs[matchFirstStr(first, uniqueLemmas)];
       secondVal = valueVector_ptrs[matchFirstStr(second, uniqueLemmas)];
-      Rprintf("index1 is %f index2 is %f \n", firstVal, secondVal);
       aux =  bval * (firstVal + secondVal) / 2.0;
       val = 1.0 - (aux - 1.0) / totalCount;
-      Rprintf("final val is %f and aux %f \n", (val / (val + (1.0 - aux))), aux);
       answer[ij] += (val / (val + (1.0 - aux)));
       ij++;
     }
@@ -318,10 +267,10 @@ void do_levenshtein_variable(double *answer, int *obs, SEXP strList, int binary_
   R_len_t nustrl, nulemmas, nlemmas;
   double *binaryValues_ptrs;
 
-  PROTECT(uniqueStr = call_unique(call_unlist(strList)));  /* 1 */
-  PROTECT(strs = call_unlist(strList)); /* 2 */
-  PROTECT(strDists = call_adist(uniqueStr));  /* 3 */
-  PROTECT(ustrList = call_unique(strList)); /* 4 */
+  PROTECT(uniqueStr = single_arg_R_fun("unique", single_arg_R_fun("unlist", strList)));  /* 1 */
+  PROTECT(strs = single_arg_R_fun("unlist", strList)); /* 2 */
+  PROTECT(strDists = single_arg_R_fun("adist", uniqueStr));  /* 3 */
+  PROTECT(ustrList = single_arg_R_fun("unique", strList)); /* 4 */
   
   nustrl = length(ustrList);
   PROTECT(binaryValues = allocMatrix(REALSXP, nustrl, nustrl)); /* 5 */
@@ -334,26 +283,13 @@ void do_levenshtein_variable(double *answer, int *obs, SEXP strList, int binary_
     for (j = 0; j < i; j++){
       second = VECTOR_ELT(ustrList, j);
       if (length(first) == 0 || length(second) == 0){
-	/* Rprintf("length 0 stuff \n"); */
 	continue;
       }
-      /* Rprintf("length not zero stuff \n"); */
       binaryValues_ptrs[j + i*nustrl] = binaryValues_ptrs[i + j*nustrl] =
 	do_binary_levenshtein(first, second, strDists, uniqueStr);
-      /* Rprintf(" binary Values first value is %f \n", REAL(binaryValues)[ij]); */
-      /* ij++; */
     }
   }
 
-  for (i = 0; i < nustrl; i++){
-    for (j = 0; j < i; j++){
-      Rprintf("Value is % f \n", binaryValues_ptrs[j + i*nustrl]);
-    }
-  }
-      
-  Rprintf("finished \n");
-
-  /* TODO the binaryValues are calculated next calculate the results */
   nlemmas = length(strList);
   ij = 0;
   for (i = 0; i < nlemmas; i++){
@@ -367,7 +303,6 @@ void do_levenshtein_variable(double *answer, int *obs, SEXP strList, int binary_
       obs[ij] = obs[ij] + 1;
       index = matchFirstStr(first, ustrList);
       index2 = matchFirstStr(second, ustrList);
-      /* Rprintf("the adding value is %f \n", REAL(binaryValues)[index + index2 * nustrl]); */
       answer[ij] = answer[ij] + REAL(binaryValues)[index + index2 * nustrl];
       ij++;
     }
@@ -416,7 +351,6 @@ SEXP do_ipi(SEXP inputList, int binary_measure){
   memset(INTEGER(nobs), 0, ansLen * sizeof(int));
 
   for (i = 0; i < nvars; i++){
-    Rprintf("input list has length  %d \n", length(VECTOR_ELT(inputList, i)));
     do_ipi_variable(REAL(answer), INTEGER(nobs), VECTOR_ELT(inputList, i), binary_measure);
   }
 

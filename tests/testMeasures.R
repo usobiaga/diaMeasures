@@ -57,20 +57,17 @@ test_that('IRD correctness', {
 test_that('IPD correctness', {
               m <- diaMeasure(set, location ~ question, 'answer', 'ipi', 'dice')
               m <- as.matrix(m)
-              expect_that(round(m[1, 2], 2), equals(67.41))
+              expect_that(round(m[1, 2], 2), equals(64.24))
           })
 
 test_that('Levenshtein Distance', {
               phoneticSet <- set
               phoneticSet$answer <- letters[as.numeric(factor(set$answer))]
               
-              phoneticSet <- phoneticSet[phoneticSet$location %in% c('Itziar', 'Maule'), ]
-              
               m <- diaMeasure(phoneticSet, location ~ question, 'answer', 'levenshtein')
-              m <- as.matrix(m)
-
               res <- c(41.666, 77.777, 66.666, 70, 83.333, 61.111, 66.666, 66.666, 100, 20)
-              expect_that(all(m - res < 0.01), eqauls(TRUE))
+              
+              expect_that(all(m - res < 0.01), equals(TRUE))
           })
 
 test_that('IRD correctness', {
@@ -84,5 +81,7 @@ test_that('IRD correctness', {
 test_that('IPD correctness', {
               m <- diaMeasure(set, location ~ question, 'answer', 'ipd', 'dice')
               m <- as.matrix(m)
-              expect_that(round(m[1, 2], 2), equals(100 - 67.41))
+              expect_that(round(m[1, 2], 2), equals(100 - 64.24))
           })
+
+

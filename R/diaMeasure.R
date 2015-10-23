@@ -32,7 +32,6 @@ diaMeasure <- function(data, formula, value.var, measure = c('ird', 'ipi', 'leve
     if (!data.table::is.data.table(data)){
         mf$data <- substitute(data.table::as.data.table(data), list(data = mf$data))
     }
-    print(eval(mf, parent.frame()))
     mf <- as.list(eval(mf, parent.frame()))
     availableMethods <- c('ird', 'ipi', 'levenshtein', 'iri', 'ipd')
     idnbr <- length(all.vars(formula[[2]]))
