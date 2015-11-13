@@ -8,3 +8,4 @@ Maintainer: Iker Usobiaga <ikeruso@gmail.com>
 Description: Dialektometric measures and classification
 License: GPL-2
 Imports: data.table
+Suggests: testthat

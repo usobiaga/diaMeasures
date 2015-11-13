@@ -1,4 +1,7 @@
 
+require(testthat)
+require(diaMeasures)
+
 ## test linguistic measures
 
 ## data representation to the C function

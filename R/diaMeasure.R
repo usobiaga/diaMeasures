@@ -90,3 +90,36 @@ print.diaMeasure <- function(x, lower = TRUE, justify = 'none', digits = getOpti
 }
 
 
+#' Coerce to diaMeasure
+#'
+#' Coertion to diaMeasure, see the corresponding method.
+#'
+#' @param x Object to be coerced
+#' @param ... parameters passed to other methods
+#' @export
+as.diaMeasure <- function(x, ...) UseMethod('as.diaMeasure')
+
+
+#' Coerce matrix to diaMeasure
+#'
+#' Coerce matrix to diaMeasure.
+#'
+#' @param x square matrix
+#' @param idVars attributes
+#' @param ... parameters passed to other methods
+#' 
+#' @export
+as.diaMeasure.matrix <- function(x, idVars, ...){
+    if (nrow(x) != ncol(x)) stop ('"x" should be square')
+    r <- range(diag(x))
+    if ((r[2] - r[1]) > 1e-07) stop ('"x" non equal values in diagonal')
+    y <- x[lower.tri(x)]
+    attr(y, 'diagv') <- x[1]
+    attr(y, 'Size') <- ncol(x)
+    if (is.null(colnames(x))) colnames(x) <- as.character(1:ncol(x))
+    attr(y, 'Labels') <- colnames(x)
+    attr(y, 'class') <- 'diaMeasure'
+    if (missing(idVars)) idVars <- data.frame(Labels = colnames(x), stringAsFactors = FALSE)
+    attr(y, 'idVars') <- idVars
+    return (y)
+}

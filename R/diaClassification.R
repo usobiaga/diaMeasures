@@ -1,5 +1,3 @@
-
-
 #' @title Classic Dialektometrical ad-hoc classification
 #'
 #' Applies certain ad-hoc measures used in Dialektometrics. 
@@ -68,7 +66,7 @@ diaClassification.diaMeasure <- function(measure, method = c('Med', 'MinMwMax', 
             result[[id]] <- cut(x, breaks, labels = FALSE, include.lowest = TRUE)
             names(result[[id]]) <- setdiff(allIds, id)
         }
-    } else {
+    } else { # MedMw
         for (i in 1L:length(ids)){
             id <- allIds[i]
             x <- measureMat[, i]
