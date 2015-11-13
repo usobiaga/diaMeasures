@@ -2,7 +2,7 @@
 require(testthat)
 require(diaMeasures)
 
-## linguistic measures test
+## Linguistic measures test
 
 ## data representation to the C function
 
