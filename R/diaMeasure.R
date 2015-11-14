@@ -113,7 +113,7 @@ as.diaMeasure.matrix <- function(x, idVars, ...){
     if (nrow(x) != ncol(x)) stop ('"x" should be square')
     r <- range(diag(x))
     if ((r[2] - r[1]) > 1e-07) stop ('"x" non equal values in diagonal')
-    y <- x[lower.tri(x)]
+    y <- x[upper.tri(x)]
     attr(y, 'diagv') <- x[1]
     attr(y, 'Size') <- ncol(x)
     if (is.null(colnames(x))) colnames(x) <- as.character(1:ncol(x))

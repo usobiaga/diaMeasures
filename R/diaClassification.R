@@ -26,7 +26,7 @@ diaClassification.diaMeasure <- function(measure, method = c('Med', 'MinMwMax', 
     if (method %in% c('MinMwMax', 'MedMw') & (n %% 2L != 0) )
         stop ('For method ', method, ' the parameter n must be multiple of 2')
     measureMat <- as.matrix(measure)
-
+    
     if (missing(ids)){
         ids <- attr(measure, 'Labels')
         d <- ncol(measureMat) - 1L
@@ -43,7 +43,7 @@ diaClassification.diaMeasure <- function(measure, method = c('Med', 'MinMwMax', 
         measureMat <- matrix(measureMat[row(measureMat) != col(measureMat) & col(measureMat) %in% matched], nrows, ncols, TRUE)
     }
     allIds <- attr(measure, 'Labels')
-    result <- setNames(vector('list', length(allIds)), allIds)
+    result <- setNames(vector('list', length(ids)), ids)
     if (method == 'Med'){
         for (i in 1L:length(ids)){
             id <- allIds[i]
@@ -78,13 +78,13 @@ diaClassification.diaMeasure <- function(measure, method = c('Med', 'MinMwMax', 
                 warning ('Too few observations for significant classification in MedMw.')
                 breaks <- unique(breaks)
             }
-            cut(x, breaks, labels, FALSE, include.lowest = TRUE)
             result[[id]] <- cut(x, breaks, labels = FALSE, include.lowest = TRUE)
             names(result[[id]]) <- setdiff(allIds, id)
         }
     }
     attr(result, 'class') <- 'diaClassification'
     attr(result, 'range') <- 1L:n
+    attr(result, 'Labels') <- allIds
     return (result)
 }
 
