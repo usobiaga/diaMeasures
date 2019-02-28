@@ -150,8 +150,6 @@ double do_binary_levenshtein(SEXP elem1, SEXP elem2, SEXP distMat, SEXP strs){
   return distance;
 }
 
-/* for easier posterior manipulation a matrix is returned rather
-   than a vector even even at the cost of hogging more memory */
 void do_ird_variable(double *answer, int *obs, SEXP strList, int binary_measure){
   SEXP first, second;
   R_len_t len;
@@ -280,7 +278,7 @@ void do_levenshtein_variable(double *answer, int *obs, SEXP strList, int binary_
   /* ij = 0; */
   for (i = 0; i < nustrl; i++){
     first = VECTOR_ELT(ustrList, i);
-    for (j = 0; j < i; j++){
+    for (j = 0; j <= i; j++){
       second = VECTOR_ELT(ustrList, j);
       if (length(first) == 0 || length(second) == 0){
 	continue;
@@ -289,7 +287,7 @@ void do_levenshtein_variable(double *answer, int *obs, SEXP strList, int binary_
 	do_binary_levenshtein(first, second, strDists, uniqueStr);
     }
   }
-
+  
   nlemmas = length(strList);
   ij = 0;
   for (i = 0; i < nlemmas; i++){
@@ -409,7 +407,7 @@ SEXP diaMeasure_C(SEXP inputList, SEXP measureR, SEXP binary_measureR, SEXP attr
   
   switch (measure){
     
-  case IRD:
+  case IRD: /* identity measure */
     PROTECT(answer = do_ird(inputList, binary_measure)); /* 2 */
     INTEGER(diagVal)[0] = 100;
     break;

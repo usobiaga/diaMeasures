@@ -1,13 +1,15 @@
 
-
 #' @title Computes a Dialectometrical measure
 #'
 #' @param data object coercible to data.frame containing the data.
 #' @param formula formula indicating which variables represent ids and variables, see details.
-#' @param value.var character of length 1 indicating the variable containing.
+#' @param value.var character of length 1 indicating the variable containing the values.
 #' @param measure character of length 1 indiciating the selected.
 #' @param binaryIndex character of length 1 indicating the binary index to use in multiple answers
 #' @param subset index indicating which subset of data to take.
+#'
+#' @details Formula takes a expression of type 'var1 + var2 ~ var3' indication the index variables on
+#' the LHS and reponse variables on the RHS. 
 #' 
 #' 
 #' @export
@@ -44,10 +46,10 @@ diaMeasure <- function(data, formula, value.var, measure = c('ird', 'ipi', 'leve
     attrs <- list(Size = length(mf[[1]]), Labels = do.call(paste, mf[1:idnbr]),
                   class = 'diaMeasure', idVars = mf[1:idnbr])
     mf <- mf[-(1:idnbr)]
-    
     result <- .Call(diaMeasure_C, mf, measure, binaryIndex, attrs)
     return (result)
 }
+
 
 #' Coertion to matrix
 #'
